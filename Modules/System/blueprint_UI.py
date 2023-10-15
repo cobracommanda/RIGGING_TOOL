@@ -46,7 +46,7 @@ class Blueprint_UI:
         )
 
         cmds.separator()
-        self.UI_elements["lock_btn"] = cmds.button(label="Lock")
+        self.UI_elements["lock_btn"] = cmds.button(label="Lock", c=self.lock)
         cmds.separator()
         self.UI_elements["publish_btn"] = cmds.button(label="Publish")
         cmds.separator()
@@ -185,6 +185,52 @@ class Blueprint_UI:
         module_transform = mod.CLASS_NAME + "__" + user_spec_name + ":module_transform"
         cmds.select(module_transform, replace=True)
         cmds.setToolTo("moveSuperContext")
+
+    def lock(self, *args):
+        result = cmds.confirmDialog(
+            messageAlign="center",
+            title="Lock Blueprints",
+            message="The action of locking a character will convert the blueprint module to joints. \nThis action cannot be undone. \nModifications to the blueprint cannot be made after this point. \nDo you want to continue?",
+            button=["Accept", "Cancel"],
+            defaultButton="Accept",
+            cancelButton="Cancel",
+            dismissString="Cancel",
+        )
+
+        if result != "Accept":
+            return
+
+        module_info = []  # store  (module, user_specified_name) pairs
+
+        cmds.namespace(setNamespace=":")
+        namespaces = cmds.namespaceInfo(listOnlyNamespaces=True)
+
+        module_name_info = utils.find_all_module_names("/Modules/Blueprint")
+        valid_modules = module_name_info[0]
+        valid_modules_names = module_name_info[1]
+
+        for n in namespaces:
+            split_string = n.partition("__")
+
+            if split_string[1] != "":
+                module = split_string[0]
+                user_specified_name = split_string[2]
+
+                if module in valid_modules_names:
+                    index = valid_modules_names.index(module)
+
+                    module_info.append([valid_modules[index], user_specified_name])
+
+        if len(module_info) == 0:
+            cmds.confirmDialog(
+                messageAlign="center",
+                title="Lock Blueprints",
+                message="There appears to be no blueprint module \ninstances in the current scene. \nAborting lock.",
+                button=["Accept"],
+                defaultButton="Accept",
+            )
+            return
+        print(module_info)
 
         """def initialize_module_tab(self, tab_height, tab_width):
         # Create a layout for the first tab

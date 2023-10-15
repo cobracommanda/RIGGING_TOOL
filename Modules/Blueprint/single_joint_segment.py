@@ -13,7 +13,7 @@ ICON = os.environ["RIGGING_TOOL_ROOT"] + "/Icons/_singleJointSeg.xpm"
 
 
 class Single_Joint_Segment(blueprint_mod.Blueprint):
-    def __init__(self, user_specified_name) -> None:
+    def __init__(self, user_specified_name):
         joint_info = [
             ["root_joint", [0.0, 0.0, 0.0]],
             ["end_joint", [4.0, 0.0, 0.0]],
