@@ -455,35 +455,74 @@ class Blueprint:
 
                 new_joint = cmds.joint(
                     n=self.module_namespace + ":blueprint_" + self.joint_info[i][0],
-                    p=joint_positions[i], orientation=joint_orientation, rotationOrder="xyz", radius=joint_radius
+                    p=joint_positions[i],
+                    orientation=joint_orientation,
+                    rotationOrder="xyz",
+                    radius=joint_radius,
                 )
-                
+
                 new_joints.append(new_joint)
-                
-                
+
                 if i < num_rotation_orders:
-                    cmds.setAttr(new_joint+".rotateOrder", int(joint_rotation_orders[i]))
-                
+                    cmds.setAttr(
+                        new_joint + ".rotateOrder", int(joint_rotation_orders[i])
+                    )
+
                 if i < num_preferred_angles:
-                    cmds.setAttr(new_joint+".preferredAngleX", int(joint_preferred_angles[i][0]))
-                    cmds.setAttr(new_joint+".preferredAngleY", int(joint_preferred_angles[i][1]))
-                    cmds.setAttr(new_joint+".preferredAngleZ", int(joint_preferred_angles[i][2]))
-                
-                cmds.setAttr(new_joint+".segmentScaleCompensate", 0)
-                
-            blueprint_grp = cmds.group(empty=True, name=self.module_namespace+":blueprint_joints_grp")
+                    cmds.setAttr(
+                        new_joint + ".preferredAngleX",
+                        int(joint_preferred_angles[i][0]),
+                    )
+                    cmds.setAttr(
+                        new_joint + ".preferredAngleY",
+                        int(joint_preferred_angles[i][1]),
+                    )
+                    cmds.setAttr(
+                        new_joint + ".preferredAngleZ",
+                        int(joint_preferred_angles[i][2]),
+                    )
+
+                cmds.setAttr(new_joint + ".segmentScaleCompensate", 0)
+
+            blueprint_grp = cmds.group(
+                empty=True, name=self.module_namespace + ":blueprint_joints_grp"
+            )
             cmds.parent(new_joints[0], blueprint_grp, absolute=True)
+
+            creation_pose_grp_nodes = cmds.duplicate(
+                blueprint_grp,
+                name=self.module_namespace + ":creationPose_joints_grp",
+                renameChildren=True,
+            )
             
-            creation_pose_grp_nodes = cmds.duplicate(blueprint_grp, name=self.module_namespace+":creationPose_joints_grp", renameChildren=True)
             creation_pose_grp = creation_pose_grp_nodes[0]
+
             
             creation_pose_grp_nodes.pop(0)
+  
             i = 0
             for node in creation_pose_grp_nodes:
-                renamed_node = cmds.rename(node, self.module_namespace+":creationPose_" + self.joint_info[i][0])
-                cmds.setAttr(renamed_node+".visibility", 0)
-                
+                renamed_node = cmds.rename(
+                    node,
+                    self.module_namespace + ":creationPose_" + self.joint_info[i][0],
+                )
+                cmds.setAttr(renamed_node + ".visibility", 0)
+                i += 1
+
+            cmds.select(blueprint_grp, replace=True)
+            cmds.addAttr(
+                at="bool",  defaultValue=0, longName="controlModulesInstalled", k=False
+            )
+            setting_locator = cmds.spaceLocator(n=self.module_namespace + ":SETTINGS")[
+                0
+            ]
+            cmds.setAttr(setting_locator + ".visibility", 0)
+            cmds.select(setting_locator, replace=True)
+            cmds.addAttr(at="enum", ln="activeModule", en="None:", k=False)
+            cmds.addAttr(at="float", ln="creationPoseWeight", defaultValue=1, k=False)
             
-                
-                    
-                
+            
+            
+
+            
+            
