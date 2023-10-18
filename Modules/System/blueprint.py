@@ -548,7 +548,37 @@ class Blueprint:
                     
                     cmds.connectAttr(original_tx_multiply+".outputX", add_tx_node+".input1D[0]", force=True)
                     utility_nodes.append(original_tx_multiply)
-                    
+                else:
+                    if root_transform:
+                        original_translates = cmds.getAttr(joint+".translate")[0]
+                        add_translate_node = cmds.shadingNode("plusMinusAverage", n="_addTranslate", asUtility=True)
+                        cmds.connectAttr(add_translate_node+".output3D", joint+".translate", force=True)
+                        utility_nodes.append(add_translate_node)
+
+                        original_translates_multiply = cmds.shadingNode("multiplyDivide", n=joint+"_original_Translate", asUtility=True)
+                        cmds.setAttr(original_translates_multiply+".input1", original_translates[0],original_translates[1], original_translates[2], type="double3")
+                        
+                        for attr in ["X","Y","Z"]:
+                            cmds.connectAttr(setting_locator+".creationPoseWeight", original_translates_multiply+".input2"+attr)
+                            
+                        cmds.connectAttr(original_translates_multiply+".output", add_translate_node+".input3D[0]", force=True)
+                        utility_nodes.append(original_translates_multiply)
+                        
+                        # Scale
+                        original_scales = cmds.getAttr(joint+".scale")[0]
+                        add_scale_node = cmds.shadingNode("plusMinusAverage", n=joint+"_addScale", asUtility=True)
+                        cmds.connectAttr(add_scale_node+".output3D", joint+".scale", force=True)
+                        utility_nodes.append(add_scale_node)
+                        
+                        original_scale_multiply = cmds.shadingNode("multiplyDivide", n=joint+"_original_Scale", asUtility=True)
+                        cmds.setAttr(original_scale_multiply+".input1", original_scales[0],original_scales[1], original_scales[2], type="double3")
+                        
+                        for attr in ["X","Y","Z"]:
+                            cmds.connectAttr(setting_locator+".creationPoseWeight", original_scale_multiply+".input2"+attr)
+                            
+                        cmds.connectAttr(original_scale_multiply+".output", add_scale_node+".input3D[0]", force=True)
+                        utility_nodes.append(original_scale_multiply)
+                        
                 i += 1
             
             
