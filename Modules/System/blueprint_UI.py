@@ -218,7 +218,6 @@ class Blueprint_UI:
 
                 if module in valid_modules_names:
                     index = valid_modules_names.index(module)
-
                     module_info.append([valid_modules[index], user_specified_name])
 
         if len(module_info) == 0:
@@ -230,7 +229,15 @@ class Blueprint_UI:
                 defaultButton="Accept",
             )
             return
-        print(module_info)
+        
+        module_instances = []
+        for module in module_info:
+            mod = __import__("Blueprint."+module[0], {}, {}, [module[0]])
+            reload(mod)
+            
+            module_class = getattr(mod, mod.CLASS_NAME)
+            module_inst = module_class(user_specified_name=module[1])
+            module_inst.lock_phase_1()
 
         """def initialize_module_tab(self, tab_height, tab_width):
         # Create a layout for the first tab
