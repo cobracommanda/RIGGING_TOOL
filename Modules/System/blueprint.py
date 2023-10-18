@@ -390,6 +390,54 @@ class Blueprint:
         
         orientation_values = (orient_x, orient_y, orient_z)
         return (orientation_values, new_clean_parent)
+    
+    
+    def lock_phase_2(self, module_info):
+        joint_positions = module_info[0]
+        num_joints = len(joint_positions)
+        
+        joint_orientations = module_info[1]
+        orient_with_axis = False
+        pure_orientations = False
+        
+        if joint_orientations[0] == None:
+            orient_with_axis = True
+            joint_orientations = joint_orientations[1]
+        else:
+            pure_orientations = True
+            joint_orientations = joint_orientations[0]
+            
+        num_orientations = len(joint_orientations)
+        
+        joint_rotation_orders = module_info[2]
+        num_rotation_orders = len(joint_rotation_orders)
+        
+        joint_preferred_angles = module_info[3] 
+        num_preferred_angles = 0
+        if joint_preferred_angles != None:
+            num_preferred_angles = len(joint_preferred_angles)
+            
+        # hook_object = module_info[4]
+        root_transform = module_info[5]
+        
+        # Delete our blueprint controls
+        cmds.lockNode(self.container_name, lock=False, lockUnpublished=False)
+        cmds.delete(self.container_name)
+        cmds.namespace(setNamespace=":")
+        
+        
+        
+        
+        
+            
+    
+            
+        
+        
+        
+        
+        
+        
         
         
         

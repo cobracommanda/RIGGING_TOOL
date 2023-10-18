@@ -240,6 +240,9 @@ class Blueprint_UI:
             module_info = module_inst.lock_phase_1()
             
             module_instances.append((module_inst, module_info))
+            
+        for module in module_instances:
+            module[0].lock_phase_2(module[1])
 
         """def initialize_module_tab(self, tab_height, tab_width):
         # Create a layout for the first tab
