@@ -14,10 +14,10 @@ class Blueprint:
     # Method intended for overidding by derived classes
     def install_custom(self, joints):
         print("install_custom() method is not implemented by derived class")
-        
+
     def lock_phase_1(self):
         # Gather and return all required information from this modules's control objects
-        
+
         # joint_positions = list of joint positions, from root down the hierarchy
         # joint_orientations = a list or orientations, or a list of axis information (orientJoint and secondaryAxisOrient for joint command)
         #                   These are passed in the following tuple: (orientations, None) or (None, axis_info)
@@ -357,91 +357,106 @@ class Blueprint:
         )
 
         return orientation_control
-    
+
     def get_joints(self):
         joint_basename = self.module_namespace + ":"
         joints = []
-        
+
         for joint_inf in self.joint_info:
             joints.append(joint_basename + joint_inf[0])
-            
+
         return joints
-    
+
     def get_orientation_control(self, joint_name):
         return joint_name + "_orientation_control"
-    
-    
+
     def orientation_control_joint_get_orientation(self, joint, clean_parent):
         new_clean_parent = cmds.duplicate(joint, parentOnly=True)[0]
-        
+
         if not clean_parent in cmds.listRelatives(new_clean_parent, parent=True):
             cmds.parent(new_clean_parent, clean_parent, absolute=True)
-            
-        cmds.makeIdentity(new_clean_parent, apply=True, rotate=True, scale=False, translate=False)
-        
+
+        cmds.makeIdentity(
+            new_clean_parent, apply=True, rotate=True, scale=False, translate=False
+        )
+
         orientation_control = self.get_orientation_control(joint)
-        cmds.setAttr(new_clean_parent+".rotateX", cmds.getAttr(orientation_control+".rotateX"))
-         
-        cmds.makeIdentity(new_clean_parent, apply=True, rotate=True, scale=False, translate=False)
-        
+        cmds.setAttr(
+            new_clean_parent + ".rotateX",
+            cmds.getAttr(orientation_control + ".rotateX"),
+        )
+
+        cmds.makeIdentity(
+            new_clean_parent, apply=True, rotate=True, scale=False, translate=False
+        )
+
         orient_x = cmds.getAttr(new_clean_parent + ".jointOrientX")
         orient_y = cmds.getAttr(new_clean_parent + ".jointOrientY")
         orient_z = cmds.getAttr(new_clean_parent + ".jointOrientZ")
-        
+
         orientation_values = (orient_x, orient_y, orient_z)
         return (orientation_values, new_clean_parent)
-    
-    
+
     def lock_phase_2(self, module_info):
         joint_positions = module_info[0]
         num_joints = len(joint_positions)
-        
+
         joint_orientations = module_info[1]
         orient_with_axis = False
         pure_orientations = False
-        
+
         if joint_orientations[0] == None:
             orient_with_axis = True
             joint_orientations = joint_orientations[1]
         else:
             pure_orientations = True
             joint_orientations = joint_orientations[0]
-            
+
         num_orientations = len(joint_orientations)
-        
+
         joint_rotation_orders = module_info[2]
         num_rotation_orders = len(joint_rotation_orders)
-        
-        joint_preferred_angles = module_info[3] 
+
+        joint_preferred_angles = module_info[3]
         num_preferred_angles = 0
         if joint_preferred_angles != None:
             num_preferred_angles = len(joint_preferred_angles)
-            
+
         # hook_object = module_info[4]
         root_transform = module_info[5]
-        
+
         # Delete our blueprint controls
         cmds.lockNode(self.container_name, lock=False, lockUnpublished=False)
         cmds.delete(self.container_name)
         cmds.namespace(setNamespace=":")
-        
-        
-        
-        
-        
-            
-    
-            
-        
-        
-        
-        
-        
-        
-        
-        
-        
-            
-        
-            
 
+        joint_radius = 1
+        if num_joints == 1:
+            joint_radius = 1.5
+
+        new_joints = []
+        for i in range(num_joints):
+            new_joint = ""
+            cmds.select(clear=True)
+
+            if orient_with_axis:
+                print("orient_with_axis")
+            else:
+                if i != 0:
+                    cmds.select(new_joints[i - 1])
+
+                joint_orientation = [0.0, 0.0, 0.0]
+                if i < num_orientations:
+                    joint_orientation = [
+                        joint_orientations[i][0],
+                        joint_orientations[i][1],
+                        joint_orientations[i][2],
+                    ]
+
+                new_joint = cmds.joint(
+                    n=self.module_namespace + ":blueprint_" + self.joint_info[i][0],
+                    p=joint_positions[i], orientation=joint_orientation, rotationOrder="xyz", radius=joint_radius
+                )
+                
+                new_joints.append(new_joint)
+                
