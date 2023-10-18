@@ -237,7 +237,9 @@ class Blueprint_UI:
             
             module_class = getattr(mod, mod.CLASS_NAME)
             module_inst = module_class(user_specified_name=module[1])
-            module_inst.lock_phase_1()
+            module_info = module_inst.lock_phase_1()
+            
+            module_instances.append((module_inst, module_info))
 
         """def initialize_module_tab(self, tab_height, tab_width):
         # Create a layout for the first tab
