@@ -523,6 +523,36 @@ class Blueprint:
             
             
             
+            i = 0
+            utility_nodes = []
+            for joint in new_joints:
+                if i < (num_joints-1) or num_joints == 1:
+                    add_node = cmds.shadingNode("plusMinusAverage", n=joint+"_addRotations", asUtility=True)
+                    cmds.connectAttr(add_node+".output3D", joint+".rotate", force=True)
+                    utility_nodes.append(add_node)
+                    
+                    dummy_rotations_multiply = cmds.shadingNode("multiplyDivide", n=joint+"_dummyRotationMultiply", asUtility=True)
+                    cmds.connectAttr(dummy_rotations_multiply+".output", add_node+".input3D[0]", force=True)
+                    utility_nodes.append(dummy_rotations_multiply)
+                    
+                if i > 0:
+                    original_tx = cmds.getAttr(joint+".tx")
+                    add_tx_node = cmds.shadingNode("plusMinusAverage", n=joint+"_addTx", asUtility=True)
+                    cmds.connectAttr(add_tx_node+".output1D", joint+".translateX", force=True)
+                    utility_nodes.append(add_tx_node)
+                    
+                    original_tx_multiply = cmds.shadingNode("multiplyDivide", n=joint+"_original_Tx", asUtility=True)
+                    cmds.setAttr(original_tx_multiply+".input1X", original_tx, lock=True)
+                    cmds.connectAttr(setting_locator+".creationPoseWeight", original_tx_multiply+".input2X", force=True)
+                    
+                    
+                    cmds.connectAttr(original_tx_multiply+".outputX", add_tx_node+".input1D[0]", force=True)
+                    utility_nodes.append(original_tx_multiply)
+                    
+                i += 1
+            
+            
+            
 
             
             
