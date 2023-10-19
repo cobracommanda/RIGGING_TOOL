@@ -28,6 +28,9 @@ class Blueprint:
         # module_info = (joint_positions, joint_orientations, joint_rotation_orders, joint_preferred_angles, hook_object, root_transform)
         # return module_info
         return None
+    
+    def UI_custom(self):
+        temp = 1
 
     # BaseClass Methods
     def install(self):
@@ -690,5 +693,14 @@ class Blueprint:
         # TEMP
         cmds.lockNode(module_container, lock=True, lockUnpublished=True)
         # END TEMP
+        
+    def UI(self, blueprint_ui_instance, parent_column_layout):
+        self.blueprint_UI_instance = blueprint_ui_instance
+        self.parent_column_layout = parent_column_layout
+        self.UI_custom()
             
+            
+    def create_rotation_order_ui_control(self, joint):
+        joint_name = utils.strip_all_namespaces(joint)[1]
+        attr_control_group = cmds.attrControlGrp(attribute=joint+".rotateOrder", label=joint_name)
             

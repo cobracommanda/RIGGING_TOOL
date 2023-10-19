@@ -65,7 +65,8 @@ class Blueprint_UI:
         cmds.scriptJob(kill=self.job_num)
 
     def initialize_module_tab(self, tab_height, tab_width):
-        scroll_height = tab_height - 200
+        module_specific_scroll_height = 120
+        scroll_height = tab_height - module_specific_scroll_height - 163
 
         self.UI_elements["module_column"] = cmds.columnLayout(adj=True, rs=3)
 
@@ -138,6 +139,12 @@ class Blueprint_UI:
             enable=True, label="Symmetry Move"
         )
 
+        cmds.setParent(self.UI_elements["module_column"])
+        cmds.separator()
+        
+        self.UI_elements["module_specific_row_column"] = cmds.rowColumnLayout(nr=1, rowAttach=[1, "both", 0], rowHeight=[1, module_specific_scroll_height], adjustableColumn=True)
+        self.UI_elements["module_specific_scroll"] = cmds.scrollLayout(hst=0, width=tab_width)
+        self.UI_elements["module_specific_column"] = cmds.columnLayout(columnWidth=self.scroll_width, columnAttach=["both", 5], rs=2,  adjustableColumn=True)
         cmds.setParent(self.UI_elements["module_column"])
         cmds.separator()
 
@@ -304,11 +311,20 @@ class Blueprint_UI:
             cmds.button(self.UI_elements["constrain_root_btn"], edit=True, enable=control_enable)
             cmds.button(self.UI_elements["delete_module_btn"], edit=True, enable=control_enable)
             cmds.textField(self.UI_elements["module_name"], edit=True, enable=control_enable, text=user_specified_name)
+            
+            self.create_specific_controls()
                 
-                
-        
-        
         self.create_script_job()
+        
+    def create_specific_controls(self):
+        existing_controls = cmds.columnLayout(self.UI_elements["module_specific_column"], q=True, childArray=True)
+        if existing_controls != None:
+            cmds.deleteUI(existing_controls)
+            
+        cmds.setParent(self.UI_elements["module_specific_column"])
+        
+        if self.module_instance != None:
+            self.module_instance.UI(self, self.UI_elements["module_specific_column"])
             
 
         """def initialize_module_tab(self, tab_height, tab_width):

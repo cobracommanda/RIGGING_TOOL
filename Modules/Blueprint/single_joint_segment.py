@@ -63,5 +63,9 @@ class Single_Joint_Segment(blueprint_mod.Blueprint):
         
         module_info = (joint_positions, joint_orientations, joint_rotation_orders, joint_preferred_angles, hook_object, root_transform)
         return module_info
-        
+    
+    
+    def UI_custom(self):
+        joints = self.get_joints()
+        self.create_rotation_order_ui_control(joints[0])
         
