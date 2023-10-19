@@ -309,7 +309,7 @@ class Blueprint_UI:
             cmds.button(self.UI_elements["rehook_btn"], edit=True, enable=control_enable)
             cmds.button(self.UI_elements["snap_root_btn"], edit=True, enable=control_enable)
             cmds.button(self.UI_elements["constrain_root_btn"], edit=True, enable=control_enable)
-            cmds.button(self.UI_elements["delete_module_btn"], edit=True, enable=control_enable)
+            cmds.button(self.UI_elements["delete_module_btn"], edit=True, enable=control_enable, c=self.delete_module)
             cmds.textField(self.UI_elements["module_name"], edit=True, enable=control_enable, text=user_specified_name)
             
             self.create_specific_controls()
@@ -325,6 +325,10 @@ class Blueprint_UI:
         
         if self.module_instance != None:
             self.module_instance.UI(self, self.UI_elements["module_specific_column"])
+            
+    def delete_module(self, *args):
+        self.module_instance.delete()
+        cmds.select(clear=True)
             
 
         """def initialize_module_tab(self, tab_height, tab_width):
