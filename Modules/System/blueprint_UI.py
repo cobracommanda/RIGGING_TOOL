@@ -8,6 +8,7 @@ reload(utils)
 
 class Blueprint_UI:
     def __init__(self) -> None:
+        self.module_instance = None
         self.UI_elements = {}
 
         if cmds.window("blueprint_UI_window", exists=True):
@@ -50,7 +51,18 @@ class Blueprint_UI:
         cmds.separator()
         self.UI_elements["publish_btn"] = cmds.button(label="Publish")
         cmds.separator()
+        
+        
+        
         cmds.showWindow(self.UI_elements["window"])
+        
+        self.create_script_job()
+        
+    def create_script_job(self):
+        self.job_num = cmds.scriptJob(event=["SelectionChanged", self.modify_selected], runOnce=True, parent=self.UI_elements["window"])
+        
+    def delete_script_job(self):
+        cmds.scriptJob(kill=self.job_num)
 
     def initialize_module_tab(self, tab_height, tab_width):
         scroll_height = tab_height - 200
@@ -121,7 +133,7 @@ class Blueprint_UI:
         )
 
         cmds.button(enable=False, label="")
-        self.UI_elements["delete_btn"] = cmds.button(enable=False, label="Delete")
+        self.UI_elements["delete_module_btn"] = cmds.button(enable=False, label="Delete")
         self.UI_elements["symmetry_move_checkbox"] = cmds.checkBox(
             enable=True, label="Symmetry Move"
         )
@@ -243,6 +255,61 @@ class Blueprint_UI:
             
         for module in module_instances:
             module[0].lock_phase_2(module[1])
+            
+    def modify_selected(self, *args):
+        selected_nodes = cmds.ls(selection=True)
+        
+        if len(selected_nodes) <= 1:
+            self.module_instance = None
+            selected_module_namespace = None
+            current_module_file = None
+            
+            if len(selected_nodes) == 1:
+                last_selected = selected_nodes[0]
+                namespace_and_node = utils.strip_leading_namespace(last_selected)
+                
+                if namespace_and_node != None:
+                    namespace = namespace_and_node[0]
+
+                    module_name_info = utils.find_all_module_names("/Modules/Blueprint")
+                    valid_modules = module_name_info[0]
+                    valid_module_names = module_name_info[1]
+                    
+                    index = 0
+                    for module_name in valid_module_names:
+                        module_name_including_suffix =  module_name + "__"
+                        
+                        if namespace.find(module_name_including_suffix) == 0:
+                            current_module_file = valid_modules[index]
+                            selected_module_namespace = namespace
+                            break
+                        
+                        index += 1
+        
+            control_enable = False
+            user_specified_name = ""
+            
+            if selected_module_namespace != None:
+                control_enable = True
+                user_specified_name = selected_module_namespace.partition("__")[2]
+                
+                mod = __import__("Blueprint."+ current_module_file, {}, {}, [current_module_file])
+                reload(mod)
+                
+                module_class = getattr(mod, mod.CLASS_NAME)
+                self.module_instance = module_class(user_specified_name=user_specified_name)
+            cmds.button(self.UI_elements["mirror_module_btn"], edit=True, enable=control_enable)
+            cmds.button(self.UI_elements["rehook_btn"], edit=True, enable=control_enable)
+            cmds.button(self.UI_elements["snap_root_btn"], edit=True, enable=control_enable)
+            cmds.button(self.UI_elements["constrain_root_btn"], edit=True, enable=control_enable)
+            cmds.button(self.UI_elements["delete_module_btn"], edit=True, enable=control_enable)
+            cmds.textField(self.UI_elements["module_name"], edit=True, enable=control_enable, text=user_specified_name)
+                
+                
+        
+        
+        self.create_script_job()
+            
 
         """def initialize_module_tab(self, tab_height, tab_width):
         # Create a layout for the first tab
