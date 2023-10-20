@@ -533,6 +533,10 @@ class Blueprint:
         cmds.addAttr(
             at="bool", defaultValue=0, longName="controlModulesInstalled", k=False
         )
+        
+        hook_grp = cmds.group(empty=True, n=f"{self.module_namespace}:HOOK_IN")
+        for obj in [blueprint_grp, creation_pose_grp]:
+            cmds.parent(obj, hook_grp)
 
         setting_locator = cmds.spaceLocator(n=self.module_namespace + ":SETTINGS")[0]
         cmds.setAttr(setting_locator + ".visibility", 0)
@@ -674,17 +678,14 @@ class Blueprint:
         utils.add_node_to_container(blueprint_container, blueprint_nodes, ihb=True)
 
         module_grp = cmds.group(empty=True, name=self.module_namespace + ":module_grp")
-        cmds.parent(setting_locator, module_grp, absolute=True)
-
-        # TEMP
-        for group in [blueprint_grp, creation_pose_grp]:
-            cmds.parent(group, module_grp, absolute=True)
-        # END TEMP
+        for obj in [hook_grp, setting_locator]:
+            cmds.parent(obj, module_grp, absolute=True)
+        
 
         module_container = cmds.container(n=self.module_namespace + ":module_container")
         utils.add_node_to_container(
             module_container,
-            [module_grp, setting_locator, blueprint_container],
+            [module_grp, hook_grp, setting_locator, blueprint_container],
             includeShapes=True,
         )
 
@@ -702,9 +703,6 @@ class Blueprint:
             ],
         )
 
-        # TEMP
-        cmds.lockNode(module_container, lock=True, lockUnpublished=True)
-        # END TEMP
 
     def UI(self, blueprint_ui_instance, parent_column_layout):
         self.blueprint_UI_instance = blueprint_ui_instance
