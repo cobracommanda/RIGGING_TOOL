@@ -265,6 +265,10 @@ class Blueprint_UI:
         for module in module_instances:
             module[0].lock_phase_2(module[1])
             
+        for module in module_instances:
+            hook_object = module[1][4]
+            module[0].lock_phase3(hook_object)
+            
     def modify_selected(self, *args):
         selected_nodes = cmds.ls(selection=True)
         
