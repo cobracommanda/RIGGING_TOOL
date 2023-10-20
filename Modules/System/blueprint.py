@@ -4,12 +4,20 @@ import System.utils as utils
 
 
 class Blueprint:
-    def __init__(self, module_name, user_specified_name, joint_info) -> None:
+    def __init__(self, module_name, user_specified_name, joint_info, hook_obj_in) -> None:
         self.module_name = module_name
         self.user_specified_name = user_specified_name
         self.module_namespace = self.module_name + "__" + self.user_specified_name
         self.container_name = self.module_namespace + ":module_container"
         self.joint_info = joint_info
+        
+        self.hook_obj = None
+        if hook_obj_in != None:
+            partition_info = hook_obj_in.rpartition("_translation_control")
+            if partition_info[1] != "" and partition_info[2] == "":
+                self.hook_obj = hook_obj_in
+                
+        print(self.hook_obj)
 
     # Method intended for overidding by derived classes
     def install_custom(self, joints):

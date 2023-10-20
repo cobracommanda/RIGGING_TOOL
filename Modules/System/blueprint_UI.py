@@ -193,12 +193,14 @@ class Blueprint_UI:
 
         new_suffix = utils.find_highest_trailing_number(namespaces, basename) + 1
         user_spec_name = basename + str(new_suffix)
+        
+        hook_obj = self.find_hook_object_from_selection()
 
         mod = __import__("Blueprint." + module, {}, {}, [module])
         reload(mod)
 
         module_class = getattr(mod, mod.CLASS_NAME)
-        module_instance = module_class(user_spec_name)
+        module_instance = module_class(user_spec_name, hook_obj)
         module_instance.install()
 
         module_transform = mod.CLASS_NAME + "__" + user_spec_name + ":module_transform"
@@ -255,7 +257,7 @@ class Blueprint_UI:
             reload(mod)
             
             module_class = getattr(mod, mod.CLASS_NAME)
-            module_inst = module_class(user_specified_name=module[1])
+            module_inst = module_class(module[1], None)
             module_info = module_inst.lock_phase_1()
             
             module_instances.append((module_inst, module_info))
@@ -304,7 +306,7 @@ class Blueprint_UI:
                 reload(mod)
                 
                 module_class = getattr(mod, mod.CLASS_NAME)
-                self.module_instance = module_class(user_specified_name=user_specified_name)
+                self.module_instance = module_class(user_specified_name, None)
             cmds.button(self.UI_elements["mirror_module_btn"], edit=True, enable=control_enable)
             cmds.button(self.UI_elements["rehook_btn"], edit=True, enable=control_enable)
             cmds.button(self.UI_elements["snap_root_btn"], edit=True, enable=control_enable)
@@ -340,6 +342,18 @@ class Blueprint_UI:
             cmds.select(previous_selection, replace=True)
         else:
             cmds.select(clear=True)
+            
+    def find_hook_object_from_selection(self, *args):
+        selected_objects = cmds.ls(selection=True, transforms=True)
+        number_of_objects = len(selected_objects)
+        
+        hook_obj = None
+        
+        if number_of_objects != 0:
+            hook_obj = selected_objects[number_of_objects - 1]
+        
+        return hook_obj
+        
             
 
         """def initialize_module_tab(self, tab_height, tab_width):
