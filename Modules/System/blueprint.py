@@ -19,7 +19,7 @@ class Blueprint:
             if partition_info[1] != "" and partition_info[2] == "":
                 self.hook_obj = hook_obj_in
 
-        print(self.hook_obj)
+
 
     # Method intended for overidding by derived classes
     def install_custom(self, joints):
@@ -713,9 +713,18 @@ class Blueprint:
 
     def create_rotation_order_ui_control(self, joint):
         joint_name = utils.strip_all_namespaces(joint)[1]
-        attr_control_group = cmds.attrControlGrp(
-            attribute=joint + ".rotateOrder", label=joint_name
-        )
+
+        # Check if the joint exists
+        if not cmds.objExists(joint):
+            return
+
+        try:
+            attr_control_group = cmds.attrControlGrp(
+                attribute=f"{joint}.rotateOrder", label=joint_name
+            )
+        except Exception as e:
+            print(f"Error accessing rotateOrder attribute for joint {joint}. Error: {e}")
+
 
     def delete(self):
         cmds.lockNode(self.container_name, lock=False, lockUnpublished=False)
@@ -851,5 +860,16 @@ class Blueprint:
         source_attr = cmds.connectionInfo(f"{hook_constraint}.target[0].targetParentMatrix", sourceFromDestination=True)
         source_node = str(source_attr.rpartition(".")[0])
         return source_node
+    
+    def find_hook_obj_for_lock(self):
+        hook_object = self.find_hook_obj()
+        
+        if hook_object == f"{self.module_namespace}:unhookTarget":
+            hook_object = None
+        else:
+            self.rehook(None)
+            
+        return hook_object
+        
         
         
