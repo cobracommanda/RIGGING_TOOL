@@ -4,19 +4,21 @@ import System.utils as utils
 
 
 class Blueprint:
-    def __init__(self, module_name, user_specified_name, joint_info, hook_obj_in) -> None:
+    def __init__(
+        self, module_name, user_specified_name, joint_info, hook_obj_in
+    ) -> None:
         self.module_name = module_name
         self.user_specified_name = user_specified_name
         self.module_namespace = self.module_name + "__" + self.user_specified_name
         self.container_name = self.module_namespace + ":module_container"
         self.joint_info = joint_info
-        
+
         self.hook_obj = None
         if hook_obj_in != None:
             partition_info = hook_obj_in.rpartition("_translation_control")
             if partition_info[1] != "" and partition_info[2] == "":
                 self.hook_obj = hook_obj_in
-                
+
         print(self.hook_obj)
 
     # Method intended for overidding by derived classes
@@ -36,7 +38,7 @@ class Blueprint:
         # module_info = (joint_positions, joint_orientations, joint_rotation_orders, joint_preferred_angles, hook_object, root_transform)
         # return module_info
         return None
-    
+
     def UI_custom(self):
         temp = 1
 
@@ -128,6 +130,8 @@ class Blueprint:
         )
 
         utils.add_node_to_container(self.container_name, root_joint_point_constraint)
+
+        self.initialize_hook(translation_controls[0])
 
         # Setup stretchy joint segments
         for index in range(len(joints) - 1):
@@ -701,30 +705,36 @@ class Blueprint:
         # TEMP
         cmds.lockNode(module_container, lock=True, lockUnpublished=True)
         # END TEMP
-        
+
     def UI(self, blueprint_ui_instance, parent_column_layout):
         self.blueprint_UI_instance = blueprint_ui_instance
         self.parent_column_layout = parent_column_layout
         self.UI_custom()
-            
-            
+
     def create_rotation_order_ui_control(self, joint):
         joint_name = utils.strip_all_namespaces(joint)[1]
-        attr_control_group = cmds.attrControlGrp(attribute=joint+".rotateOrder", label=joint_name)
-        
+        attr_control_group = cmds.attrControlGrp(
+            attribute=joint + ".rotateOrder", label=joint_name
+        )
+
     def delete(self):
         cmds.lockNode(self.container_name, lock=False, lockUnpublished=False)
         cmds.delete(self.container_name)
-        
+
         cmds.namespace(setNamespace=":")
         cmds.namespace(removeNamespace=self.module_namespace)
-        
+
     def rename_module_instance(self, new_name):
         if new_name == self.user_specified_name:
             return True
-        
+
         if utils.does_blueprint_user_specified_name_exist(new_name):
-            cmds.confirmDialog(title="Name Conflict", message=f"Name \{new_name}\ already exist, aborting rename", button=["Accept"], defaultButton="Accept")
+            cmds.confirmDialog(
+                title="Name Conflict",
+                message=f"Name \{new_name}\ already exist, aborting rename",
+                button=["Accept"],
+                defaultButton="Accept",
+            )
             return False
         else:
             new_namespace = f"{self.module_name}__{new_name}"
@@ -734,14 +744,83 @@ class Blueprint:
             cmds.namespace(setNamespace=":")
             cmds.namespace(moveNamespace=[self.module_namespace, new_namespace])
             cmds.namespace(removeNamespace=self.module_namespace)
-            
+
             self.module_namespace = new_namespace
             self.container_name = f"{self.module_namespace}:module_container"
             cmds.lockNode(self.container_name, lock=True, lockUnpublished=True)
             return True
+
+    def initialize_hook(self, root_translation_control):
+        unhooked_locator = cmds.spaceLocator(
+            name=f"{self.module_namespace}:unhookedTarget"
+        )[0]
+        cmds.pointConstraint(
+            root_translation_control, unhooked_locator, offset=[0, 0.001, 0]
+        )
+        cmds.setAttr(f"{unhooked_locator}.visibility", 0)
+
+        if self.hook_obj == None:
+            self.hook_obj = unhooked_locator
+
+        root_pos = cmds.xform(
+            root_translation_control, q=True, worldSpace=True, translation=True
+        )
+        target_pos = cmds.xform(
+            self.hook_obj, q=True, worldSpace=True, translation=True
+        )
+
+        cmds.select(clear=True)
+
+        root_joint_without_namespace = "hook_root_joint"
+        root_joint = cmds.joint(
+            n=f"{self.module_namespace}:{root_joint_without_namespace}", p=root_pos
+        )
+        cmds.setAttr(f"{root_joint}.visibility", 0)
+
+        target_joint_without_namespace = "hook_target_joint"
+        target_joint = cmds.joint(
+            n=f"{self.module_namespace}:{target_joint_without_namespace}", p=target_pos
+        )
+        cmds.setAttr(f"{target_joint}.visibility", 0)
+
+        cmds.joint(root_joint, edit=True, orientJoint="xyz", sao="yup")
+
+        hook_group = cmds.group(
+            [root_joint, unhooked_locator],
+            n=f"{self.module_namespace}:hook_grp",
+            parent=self.module_grp,
+        )
+        hook_container = cmds.container(name=f"{self.module_namespace}:hook_container")
+        utils.add_node_to_container(hook_container, hook_group, ihb=True)
+        utils.add_node_to_container(self.container_name, hook_container)
+        
+        
+        for joint in [root_joint, target_joint]:
+            joint_name = utils.strip_all_namespaces(joint)[1]
+            cmds.container(hook_container, edit=True, publishAndBind=[f"{joint}.rotate", f"{joint_name}_R"])
             
+        ik_nodes = utils.basic_stretchy_ik(root_joint, target_joint, hook_container, lock_minimum_length=False)
+        ik_handle = ik_nodes["ik_handle"]
+        root_locator = ik_nodes["root_locator"]
+        end_locator = ik_nodes["end_locator"]
+        pole_vector_locator = ik_nodes["pole_vector_object"]
+        
+        root_point_constraint = cmds.pointConstraint(root_translation_control, root_joint, maintainOffset=False, n=f"{root_joint}_pointConstraint")[0]
+        target_point_constraint = cmds.pointConstraint(self.hook_obj, end_locator, maintainOffset=False, n=f"{self.module_namespace}:hook_pointConstraint")[0]
+        
+        utils.add_node_to_container(hook_container, [root_point_constraint, target_point_constraint])
+        
+        for node in [ik_handle, root_locator, end_locator, pole_vector_locator]:
+            cmds.parent(node, hook_group, absolute=True)
+            cmds.setAttr(f"{node}.visibility", 0)
             
-            
-            
-            
-            
+        object_nodes = self.create_stretchy_object("/ControlObjects/Blueprint/hook_representation.ma", "hook_representation_container", "hook_representation", root_joint, target_joint)
+        constraing_grp = object_nodes[2]
+        cmds.parent(constraing_grp, hook_group, absolute=True)
+        hook_representation_container = object_nodes[0]
+        
+        cmds.container(self.container_name, edit=True, removeNode=hook_representation_container)
+        utils.add_node_to_container(hook_container, hook_representation_container)
+        
+        
+        
