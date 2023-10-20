@@ -119,7 +119,7 @@ class Blueprint_UI:
             columnWidth=[(1, column_width), (2, column_width), (3, column_width)],
         )
 
-        self.UI_elements["rehook_btn"] = cmds.button(enable=False, label="Re-hook")
+        self.UI_elements["rehook_btn"] = cmds.button(enable=False, label="Re-hook", c=self.rehook_module_setup)
         self.UI_elements["snap_root_btn"] = cmds.button(
             enable=False, label="Snap Root > Hook"
         )
@@ -354,7 +354,28 @@ class Blueprint_UI:
         
         return hook_obj
         
+    def rehook_module_setup(self, *args):
+        selected_nodes = cmds.ls(selection=True, transforms=True)
+        if len(selected_nodes) == 2:
+            new_hook = self.find_hook_object_from_selection()
+            self.module_instance.rehook(new_hook)
+        else:
+            self.delete_script_job()
+            current_selection = cmds.ls(selection=True)
+            cmds.headsUpMessage("Please select the joint you wish to re-hook to, Clear selection to un-hook")
+            cmds.scriptJob(event=["SelectionChanged", partial(self.rehook_module_callback, current_selection)], runOnce=True)
             
+    def rehook_module_callback(self, currentSelection):
+        new_hook = self.find_hook_object_from_selection()
+        self.module_instance.rehook(new_hook)
+        
+        if len(currentSelection) > 0:
+            cmds.select(currentSelection, replace=True)
+        else:
+            cmds.select(clear=True)
+        
+        self.create_script_job()
+        
 
         """def initialize_module_tab(self, tab_height, tab_width):
         # Create a layout for the first tab

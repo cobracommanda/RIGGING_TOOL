@@ -822,5 +822,7 @@ class Blueprint:
         cmds.container(self.container_name, edit=True, removeNode=hook_representation_container)
         utils.add_node_to_container(hook_container, hook_representation_container)
         
+    def rehook(self, new_hook_object):
+        print(new_hook_object)
         
         
