@@ -727,35 +727,38 @@ class Blueprint:
 
     def delete(self):
         cmds.lockNode(self.container_name, lock=False, lockUnpublished=False)
-        
+
         valid_module_info = utils.find_all_module_names("/Modules/Blueprint")
         valid_modules = valid_module_info[0]
         valid_module_names = valid_module_info[1]
-        
+
         hooked_modules = set()
         for joint_inf in self.joint_info:
             joint = joint_inf[0]
-            translation_control = self.get_translation_control(f"{self.module_namespace}:{joint}")
+            translation_control = self.get_translation_control(
+                f"{self.module_namespace}:{joint}"
+            )
 
             connections = cmds.listConnections(translation_control)
-            
+
             for connection in connections:
                 module_instance = utils.strip_leading_namespace(connection)
-                
+
                 if module_instance != None:
                     split_string = module_instance[0].partition("__")
-                    if module_instance[0] != self.module_namespace and split_string[0] in valid_module_names:
+                    if (
+                        module_instance[0] != self.module_namespace
+                        and split_string[0] in valid_module_names
+                    ):
                         index = valid_module_names.index(split_string[0])
                         hooked_modules.add((valid_modules[index], split_string[2]))
-                        
+
         for module in hooked_modules:
             mod = __import__(f"Blueprint.{module[0]}", {}, {}, [module[0]])
             module_class = getattr(mod, mod.CLASS_NAME)
             module_inst = module_class(module[1], None)
             module_inst.rehook(None)
-            
-            
-        
+
         cmds.delete(self.container_name)
 
         cmds.namespace(setNamespace=":")
@@ -900,6 +903,8 @@ class Blueprint:
 
         if self.hook_obj == old_hook_obj:
             return
+        
+        self.unconstrain_root_from_hook()
 
         cmds.lockNode(self.container_name, lock=False, lockUnpublished=False)
         hook_constraint = f"{self.module_namespace}:hook_pointConstraint"
@@ -945,50 +950,100 @@ class Blueprint:
             self.rehook(None)
 
         return hook_object
-    
+
     def lock_phase3(self, hook_object):
         module_container = f"{self.module_namespace}:module_container"
-        
+
         if hook_object != None:
             hook_object_module_node = utils.strip_leading_namespace(hook_object)
             hook_obj_module = hook_object_module_node[0]
             hook_obj_joint = hook_object_module_node[1].split("_translation_control")[0]
-            
+
             hook_obj = f"{hook_obj_module}:blueprint_{hook_obj_joint}"
-            parent_constraint = cmds.parentConstraint(hook_obj, f"{self.module_namespace}:HOOK_IN", maintainOffset=True,  n=f"{self.module_namespace}:hook_parent_constraint")[0]
-            scale_constraint = cmds.scaleConstraint(hook_obj, f"{self.module_namespace}:HOOK_IN", maintainOffset=True, n=f"{self.module_namespace}:hook_scale_constraint")[0]
-            
-            
-            utils.add_node_to_container(module_container, [parent_constraint, scale_constraint])
-            
+            parent_constraint = cmds.parentConstraint(
+                hook_obj,
+                f"{self.module_namespace}:HOOK_IN",
+                maintainOffset=True,
+                n=f"{self.module_namespace}:hook_parent_constraint",
+            )[0]
+            scale_constraint = cmds.scaleConstraint(
+                hook_obj,
+                f"{self.module_namespace}:HOOK_IN",
+                maintainOffset=True,
+                n=f"{self.module_namespace}:hook_scale_constraint",
+            )[0]
+
+            utils.add_node_to_container(
+                module_container, [parent_constraint, scale_constraint]
+            )
+
         cmds.lockNode(module_container, lock=True, lockUnpublished=True)
-        
+
     def snap_root_to_hook(self):
-        root_control = self.get_translation_control(f"{self.module_namespace}:{self.joint_info[0][0]}")
+        root_control = self.get_translation_control(
+            f"{self.module_namespace}:{self.joint_info[0][0]}"
+        )
         hook_object = self.find_hook_obj()
-        
+
         if hook_object == f"{self.module_namespace}:unhookedTarget":
             return
-        
-        hook_object_pos = cmds.xform(hook_object, q=True, worldSpace=True, translation=True)
-        cmds.xform(root_control, worldSpace=True, absolute=True, translation=hook_object_pos)
-        
-        
+
+        hook_object_pos = cmds.xform(
+            hook_object, q=True, worldSpace=True, translation=True
+        )
+        cmds.xform(
+            root_control, worldSpace=True, absolute=True, translation=hook_object_pos
+        )
+
     def constrain_root_to_hook(self):
-        root_control = self.get_translation_control(f"{self.module_namespace}:{self.joint_info[0][0]}")
+        root_control = self.get_translation_control(
+            f"{self.module_namespace}:{self.joint_info[0][0]}"
+        )
         hook_object = self.find_hook_obj()
-        
+
         if hook_object == f"{self.module_namespace}:unhookedTarget":
             return
-        
+
         cmds.lockNode(self.container_name, lock=False, lockUnpublished=False)
-        
-        cmds.pointConstraint(hook_object, root_control, maintainOffset=False, n=f"{root_control}_hookConstraint")
+
+        cmds.pointConstraint(
+            hook_object,
+            root_control,
+            maintainOffset=False,
+            n=f"{root_control}_hookConstraint",
+        )
         cmds.setAttr(f"{root_control}.translate", l=True)
         cmds.setAttr(f"{root_control}.visibility", l=False)
         cmds.setAttr(f"{root_control}.visibility", 0)
         cmds.setAttr(f"{root_control}.visibility", l=True)
-        
+
         cmds.select(clear=True)
-        
+
         cmds.lockNode(self.container_name, lock=True, lockUnpublished=True)
+
+    def unconstrain_root_from_hook(self):
+        cmds.lockNode(self.container_name, lock=False, lockUnpublished=False)
+
+        root_control = self.get_translation_control(
+            f"{self.module_namespace}:{self.joint_info[0][0]}"
+        )
+        root_control_hook_constraint = f"{root_control}_hookConstraint"
+
+        if cmds.objExists(root_control_hook_constraint):
+            cmds.delete(root_control_hook_constraint)
+
+            cmds.setAttr(f"{root_control}.translate", l=False)
+            cmds.setAttr(f"{root_control}.visibility", l=False)
+            cmds.setAttr(f"{root_control}.visibility", 1)
+            cmds.setAttr(f"{root_control}.visibility", l=True)
+
+        cmds.lockNode(self.container_name, lock=True, lockUnpublished=True)
+        
+    def is_root_constrained(self):
+        root_control = self.get_translation_control(
+            f"{self.module_namespace}:{self.joint_info[0][0]}"
+        )
+        root_control_hook_constraint = f"{root_control}_hookConstraint"
+        
+        return cmds.objExists(root_control_hook_constraint)
+        

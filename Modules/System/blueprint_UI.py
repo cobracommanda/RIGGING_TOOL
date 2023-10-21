@@ -321,18 +321,27 @@ class Blueprint_UI:
 
             control_enable = False
             user_specified_name = ""
+            
+            constrain_command = self.constrain_root_to_hook
+            constrain_label = "Constrain Root > Hook"
 
             if selected_module_namespace != None:
                 control_enable = True
                 user_specified_name = selected_module_namespace.partition("__")[2]
 
                 mod = __import__(
-                    "Blueprint." + current_module_file, {}, {}, [current_module_file]
-                )
+                    # "Blueprint." + current_module_file, {}, {}, [current_module_file]
+                    f"Blueprint.{current_module_file}", {}, {}, [current_module_file])
                 reload(mod)
 
                 module_class = getattr(mod, mod.CLASS_NAME)
                 self.module_instance = module_class(user_specified_name, None)
+                
+                if self.module_instance.is_root_constrained():
+                    constrain_command = self.unconstrain_root_from_hook
+                    constrain_label = "Unconstrain Root"
+                    
+                
             cmds.button(
                 self.UI_elements["mirror_module_btn"], edit=True, enable=control_enable
             )
@@ -343,7 +352,7 @@ class Blueprint_UI:
                 self.UI_elements["snap_root_btn"], edit=True, enable=control_enable
             )
             cmds.button(
-                self.UI_elements["constrain_root_btn"], edit=True, enable=control_enable
+                self.UI_elements["constrain_root_btn"], edit=True, enable=control_enable, label=constrain_label, c=constrain_command
             )
             cmds.button(
                 self.UI_elements["delete_module_btn"],
@@ -435,16 +444,28 @@ class Blueprint_UI:
 
     def constrain_root_to_hook(self, *args):
         self.module_instance.constrain_root_to_hook()
+        self.update_button_to_unconstrain()
 
+    def unconstrain_root_from_hook(self, *args):
+        self.module_instance.unconstrain_root_from_hook()
+        self.update_button_to_constrain()
+
+    def update_button_to_unconstrain(self):
         cmds.button(
             self.UI_elements["constrain_root_btn"],
             edit=True,
             label="Unconstrain Root",
-            c=self.unconstrain_root_from_hook,
+            c=self.unconstrain_root_from_hook
         )
 
-    def unconstrain_root_from_hook(self, *args):
-        print("UNCONSTRAIN")
+    def update_button_to_constrain(self):
+        cmds.button(
+            self.UI_elements["constrain_root_btn"],
+            edit=True,
+            label="Constrain Root > Hook",
+            c=self.constrain_root_to_hook
+        )
+
 
         """def initialize_module_tab(self, tab_height, tab_width):
         # Create a layout for the first tab
