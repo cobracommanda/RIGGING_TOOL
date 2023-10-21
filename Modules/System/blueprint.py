@@ -972,3 +972,23 @@ class Blueprint:
         
         hook_object_pos = cmds.xform(hook_object, q=True, worldSpace=True, translation=True)
         cmds.xform(root_control, worldSpace=True, absolute=True, translation=hook_object_pos)
+        
+        
+    def constrain_root_to_hook(self):
+        root_control = self.get_translation_control(f"{self.module_namespace}:{self.joint_info[0][0]}")
+        hook_object = self.find_hook_obj()
+        
+        if hook_object == f"{self.module_namespace}:unhookedTarget":
+            return
+        
+        cmds.lockNode(self.container_name, lock=False, lockUnpublished=False)
+        
+        cmds.pointConstraint(hook_object, root_control, maintainOffset=False, n=f"{root_control}_hookConstraint")
+        cmds.setAttr(f"{root_control}.translate", l=True)
+        cmds.setAttr(f"{root_control}.visibility", l=False)
+        cmds.setAttr(f"{root_control}.visibility", 0)
+        cmds.setAttr(f"{root_control}.visibility", l=True)
+        
+        cmds.select(clear=True)
+        
+        cmds.lockNode(self.container_name, lock=True, lockUnpublished=True)

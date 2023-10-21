@@ -51,16 +51,18 @@ class Blueprint_UI:
         cmds.separator()
         self.UI_elements["publish_btn"] = cmds.button(label="Publish")
         cmds.separator()
-        
-        
-        
+
         cmds.showWindow(self.UI_elements["window"])
-        
+
         self.create_script_job()
-        
+
     def create_script_job(self):
-        self.job_num = cmds.scriptJob(event=["SelectionChanged", self.modify_selected], runOnce=True, parent=self.UI_elements["window"])
-        
+        self.job_num = cmds.scriptJob(
+            event=["SelectionChanged", self.modify_selected],
+            runOnce=True,
+            parent=self.UI_elements["window"],
+        )
+
     def delete_script_job(self):
         cmds.scriptJob(kill=self.job_num)
 
@@ -104,7 +106,9 @@ class Blueprint_UI:
 
         cmds.text(label="Module Name :")
         self.UI_elements["module_name"] = cmds.textField(
-            enable=False, alwaysInvokeEnterCommandOnReturn=True, enterCommand=self.rename_module
+            enable=False,
+            alwaysInvokeEnterCommandOnReturn=True,
+            enterCommand=self.rename_module,
         )
         cmds.setParent(self.UI_elements["module_column"])
 
@@ -119,12 +123,14 @@ class Blueprint_UI:
             columnWidth=[(1, column_width), (2, column_width), (3, column_width)],
         )
 
-        self.UI_elements["rehook_btn"] = cmds.button(enable=False, label="Re-hook", c=self.rehook_module_setup)
+        self.UI_elements["rehook_btn"] = cmds.button(
+            enable=False, label="Re-hook", c=self.rehook_module_setup
+        )
         self.UI_elements["snap_root_btn"] = cmds.button(
             enable=False, label="Snap Root > Hook", c=self.snap_root_to_hook
         )
         self.UI_elements["constrain_root_btn"] = cmds.button(
-            enable=False, label="Constrain Root > Hook"
+            enable=False, label="Constrain Root > Hook", c=self.constrain_root_to_hook
         )
 
         self.UI_elements["group_selected_btn"] = cmds.button(label="Group Selected")
@@ -134,17 +140,31 @@ class Blueprint_UI:
         )
 
         cmds.button(enable=False, label="")
-        self.UI_elements["delete_module_btn"] = cmds.button(enable=False, label="Delete")
+        self.UI_elements["delete_module_btn"] = cmds.button(
+            enable=False, label="Delete"
+        )
         self.UI_elements["symmetry_move_checkbox"] = cmds.checkBox(
             enable=True, label="Symmetry Move"
         )
 
         cmds.setParent(self.UI_elements["module_column"])
         cmds.separator()
-        
-        self.UI_elements["module_specific_row_column"] = cmds.rowColumnLayout(nr=1, rowAttach=[1, "both", 0], rowHeight=[1, module_specific_scroll_height], adjustableColumn=True)
-        self.UI_elements["module_specific_scroll"] = cmds.scrollLayout(hst=0, width=tab_width)
-        self.UI_elements["module_specific_column"] = cmds.columnLayout(columnWidth=self.scroll_width, columnAttach=["both", 5], rs=2,  adjustableColumn=True)
+
+        self.UI_elements["module_specific_row_column"] = cmds.rowColumnLayout(
+            nr=1,
+            rowAttach=[1, "both", 0],
+            rowHeight=[1, module_specific_scroll_height],
+            adjustableColumn=True,
+        )
+        self.UI_elements["module_specific_scroll"] = cmds.scrollLayout(
+            hst=0, width=tab_width
+        )
+        self.UI_elements["module_specific_column"] = cmds.columnLayout(
+            columnWidth=self.scroll_width,
+            columnAttach=["both", 5],
+            rs=2,
+            adjustableColumn=True,
+        )
         cmds.setParent(self.UI_elements["module_column"])
         cmds.separator()
 
@@ -193,7 +213,7 @@ class Blueprint_UI:
 
         new_suffix = utils.find_highest_trailing_number(namespaces, basename) + 1
         user_spec_name = basename + str(new_suffix)
-        
+
         hook_obj = self.find_hook_object_from_selection()
 
         mod = __import__("Blueprint." + module, {}, {}, [module])
@@ -250,114 +270,136 @@ class Blueprint_UI:
                 defaultButton="Accept",
             )
             return
-        
+
         module_instances = []
         for module in module_info:
-            mod = __import__("Blueprint."+module[0], {}, {}, [module[0]])
+            mod = __import__("Blueprint." + module[0], {}, {}, [module[0]])
             reload(mod)
-            
+
             module_class = getattr(mod, mod.CLASS_NAME)
             module_inst = module_class(module[1], None)
             module_info = module_inst.lock_phase_1()
-            
+
             module_instances.append((module_inst, module_info))
-            
+
         for module in module_instances:
             module[0].lock_phase_2(module[1])
-            
+
         for module in module_instances:
             hook_object = module[1][4]
             module[0].lock_phase3(hook_object)
-            
+
     def modify_selected(self, *args):
         selected_nodes = cmds.ls(selection=True)
-        
+
         if len(selected_nodes) <= 1:
             self.module_instance = None
             selected_module_namespace = None
             current_module_file = None
-            
+
             if len(selected_nodes) == 1:
                 last_selected = selected_nodes[0]
                 namespace_and_node = utils.strip_leading_namespace(last_selected)
-                
+
                 if namespace_and_node != None:
                     namespace = namespace_and_node[0]
 
                     module_name_info = utils.find_all_module_names("/Modules/Blueprint")
                     valid_modules = module_name_info[0]
                     valid_module_names = module_name_info[1]
-                    
+
                     index = 0
                     for module_name in valid_module_names:
-                        module_name_including_suffix =  module_name + "__"
-                        
+                        module_name_including_suffix = module_name + "__"
+
                         if namespace.find(module_name_including_suffix) == 0:
                             current_module_file = valid_modules[index]
                             selected_module_namespace = namespace
                             break
-                        
+
                         index += 1
-        
+
             control_enable = False
             user_specified_name = ""
-            
+
             if selected_module_namespace != None:
                 control_enable = True
                 user_specified_name = selected_module_namespace.partition("__")[2]
-                
-                mod = __import__("Blueprint."+ current_module_file, {}, {}, [current_module_file])
+
+                mod = __import__(
+                    "Blueprint." + current_module_file, {}, {}, [current_module_file]
+                )
                 reload(mod)
-                
+
                 module_class = getattr(mod, mod.CLASS_NAME)
                 self.module_instance = module_class(user_specified_name, None)
-            cmds.button(self.UI_elements["mirror_module_btn"], edit=True, enable=control_enable)
-            cmds.button(self.UI_elements["rehook_btn"], edit=True, enable=control_enable)
-            cmds.button(self.UI_elements["snap_root_btn"], edit=True, enable=control_enable)
-            cmds.button(self.UI_elements["constrain_root_btn"], edit=True, enable=control_enable)
-            cmds.button(self.UI_elements["delete_module_btn"], edit=True, enable=control_enable, c=self.delete_module)
-            cmds.textField(self.UI_elements["module_name"], edit=True, enable=control_enable, text=user_specified_name)
-            
+            cmds.button(
+                self.UI_elements["mirror_module_btn"], edit=True, enable=control_enable
+            )
+            cmds.button(
+                self.UI_elements["rehook_btn"], edit=True, enable=control_enable
+            )
+            cmds.button(
+                self.UI_elements["snap_root_btn"], edit=True, enable=control_enable
+            )
+            cmds.button(
+                self.UI_elements["constrain_root_btn"], edit=True, enable=control_enable
+            )
+            cmds.button(
+                self.UI_elements["delete_module_btn"],
+                edit=True,
+                enable=control_enable,
+                c=self.delete_module,
+            )
+            cmds.textField(
+                self.UI_elements["module_name"],
+                edit=True,
+                enable=control_enable,
+                text=user_specified_name,
+            )
+
             self.create_specific_controls()
-                
+
         self.create_script_job()
-        
+
     def create_specific_controls(self):
-        existing_controls = cmds.columnLayout(self.UI_elements["module_specific_column"], q=True, childArray=True)
+        existing_controls = cmds.columnLayout(
+            self.UI_elements["module_specific_column"], q=True, childArray=True
+        )
         if existing_controls != None:
             cmds.deleteUI(existing_controls)
-            
+
         cmds.setParent(self.UI_elements["module_specific_column"])
-        
+
         if self.module_instance != None:
             self.module_instance.UI(self, self.UI_elements["module_specific_column"])
-            
+
     def delete_module(self, *args):
         self.module_instance.delete()
         cmds.select(clear=True)
-        
+
     def rename_module(self, *args):
         new_name = cmds.textField(self.UI_elements["module_name"], q=True, text=True)
-        
+
         self.module_instance.rename_module_instance(new_name)
-        
+
         previous_selection = cmds.ls(selection=True)
         if len(previous_selection) > 0:
             cmds.select(previous_selection, replace=True)
         else:
             cmds.select(clear=True)
-            
+
     def find_hook_object_from_selection(self, *args):
         selected_objects = cmds.ls(selection=True, transforms=True)
         number_of_objects = len(selected_objects)
-        
+
         hook_obj = None
-        
+
         if number_of_objects != 0:
             hook_obj = selected_objects[number_of_objects - 1]
-        
+
         return hook_obj
-        
+
     def rehook_module_setup(self, *args):
         selected_nodes = cmds.ls(selection=True, transforms=True)
         if len(selected_nodes) == 2:
@@ -366,23 +408,43 @@ class Blueprint_UI:
         else:
             self.delete_script_job()
             current_selection = cmds.ls(selection=True)
-            cmds.headsUpMessage("Please select the joint you wish to re-hook to, Clear selection to un-hook")
-            cmds.scriptJob(event=["SelectionChanged", partial(self.rehook_module_callback, current_selection)], runOnce=True)
-            
+            cmds.headsUpMessage(
+                "Please select the joint you wish to re-hook to, Clear selection to un-hook"
+            )
+            cmds.scriptJob(
+                event=[
+                    "SelectionChanged",
+                    partial(self.rehook_module_callback, current_selection),
+                ],
+                runOnce=True,
+            )
+
     def rehook_module_callback(self, currentSelection):
         new_hook = self.find_hook_object_from_selection()
         self.module_instance.rehook(new_hook)
-        
+
         if len(currentSelection) > 0:
             cmds.select(currentSelection, replace=True)
         else:
             cmds.select(clear=True)
-        
+
         self.create_script_job()
-        
+
     def snap_root_to_hook(self, *args):
         self.module_instance.snap_root_to_hook()
-        
+
+    def constrain_root_to_hook(self, *args):
+        self.module_instance.constrain_root_to_hook()
+
+        cmds.button(
+            self.UI_elements["constrain_root_btn"],
+            edit=True,
+            label="Unconstrain Root",
+            c=self.unconstrain_root_from_hook,
+        )
+
+    def unconstrain_root_from_hook(self, *args):
+        print("UNCONSTRAIN")
 
         """def initialize_module_tab(self, tab_height, tab_width):
         # Create a layout for the first tab
