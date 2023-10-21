@@ -121,7 +121,7 @@ class Blueprint_UI:
 
         self.UI_elements["rehook_btn"] = cmds.button(enable=False, label="Re-hook", c=self.rehook_module_setup)
         self.UI_elements["snap_root_btn"] = cmds.button(
-            enable=False, label="Snap Root > Hook"
+            enable=False, label="Snap Root > Hook", c=self.snap_root_to_hook
         )
         self.UI_elements["constrain_root_btn"] = cmds.button(
             enable=False, label="Constrain Root > Hook"
@@ -379,6 +379,9 @@ class Blueprint_UI:
             cmds.select(clear=True)
         
         self.create_script_job()
+        
+    def snap_root_to_hook(self, *args):
+        self.module_instance.snap_root_to_hook()
         
 
         """def initialize_module_tab(self, tab_height, tab_width):

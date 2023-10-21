@@ -962,8 +962,13 @@ class Blueprint:
             utils.add_node_to_container(module_container, [parent_constraint, scale_constraint])
             
         cmds.lockNode(module_container, lock=True, lockUnpublished=True)
-            
         
-            
-            
-
+    def snap_root_to_hook(self):
+        root_control = self.get_translation_control(f"{self.module_namespace}:{self.joint_info[0][0]}")
+        hook_object = self.find_hook_obj()
+        
+        if hook_object == f"{self.module_namespace}:unhookedTarget":
+            return
+        
+        hook_object_pos = cmds.xform(hook_object, q=True, worldSpace=True, translation=True)
+        cmds.xform(root_control, worldSpace=True, absolute=True, translation=hook_object_pos)
