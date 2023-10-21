@@ -1036,6 +1036,9 @@ class Blueprint:
             cmds.setAttr(f"{root_control}.visibility", l=False)
             cmds.setAttr(f"{root_control}.visibility", 1)
             cmds.setAttr(f"{root_control}.visibility", l=True)
+            
+            cmds.select(root_control, replace=True)
+            cmds.setToolTo("moveSuperContext")
 
         cmds.lockNode(self.container_name, lock=True, lockUnpublished=True)
         
